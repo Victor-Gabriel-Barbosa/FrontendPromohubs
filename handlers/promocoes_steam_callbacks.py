@@ -1,19 +1,78 @@
-from telebot import types
+import contextlib
 from bot_instance import bot
+import requests
+import io
+from config import API_URL
 
-@bot.message_handler(commands=['promocoes'])
-def exibir_menu_promocoes(message):
-  markup = types.InlineKeyboardMarkup(row_width=2)
-  
-  btn_ate_20 = types.InlineKeyboardButton("Até R$ 20", callback_data="promo_0_20")
-  btn_20_a_50 = types.InlineKeyboardButton("R$ 20 a R$ 50", callback_data="promo_20_50")
-  btn_acima_50 = types.InlineKeyboardButton("Acima de R$ 50", callback_data="promo_50_plus")
-  btn_todas = types.InlineKeyboardButton("Todas", callback_data="promo_all")
-  
-  markup.add(btn_ate_20, btn_20_a_50, btn_acima_50, btn_todas)
-  
-  bot.send_message(
-    message.chat.id, 
-    "Selecione a faixa de preço desejada para as promoções da Steam:", 
-    reply_markup=markup
-  )
+@bot.callback_query_handler(func=lambda call: call.data.startswith('promo_'))
+def processar_busca_promocoes(call):
+  bot.answer_callback_query(call.id, "Buscando promoções...")
+
+  try:
+    response_promocoes = requests.get(f"{API_URL}/promocoes")
+
+    if response_promocoes.status_code == 200:
+      if promocoes := response_promocoes.json():
+        promocoes_filtradas = []
+
+        # Filtragem de preço
+        for p in promocoes:
+          if not p.get('publicado'):
+            continue
+
+          preco_final = p.get('preco_final')
+
+          if call.data == "promo_all":
+            promocoes_filtradas.append(p)
+            continue
+
+          # Converte e garante que o preço é numérico
+          if preco_final is not None:
+            with contextlib.suppress(ValueError):
+              preco = float(str(preco_final).replace(',', '.'))
+
+              # Filtra conforme a opção selecionada
+              if (call.data == "promo_0_20" and preco <= 20.0) or \
+                (call.data == "promo_20_50" and 20.0 < preco <= 50.0) or \
+                (call.data == "promo_50_plus" and preco > 50.0):
+
+                promocoes_filtradas.append(p)
+        # Processa e envia as mensagens
+        if promocoes_filtradas:
+          cabecalho = f"🎮 *Promoções Encontradas ({len(promocoes_filtradas)}):*"
+          bot.send_message(call.message.chat.id, cabecalho, parse_mode="Markdown")
+
+          for p in promocoes_filtradas:
+            texto_produto = f"*{p.get('nome')}*\n\n"
+
+            if p.get('desconto'): 
+              texto_produto += f"📉 Desconto: {p.get('desconto')}\n"
+            if p.get('preco_original'): 
+              texto_produto += f"💰 Preço Original: R$ {p.get('preco_original')}\n"
+            if p.get('preco_final') is not None: 
+              texto_produto += f"🔥 Preço Final: R$ {p.get('preco_final')}\n\n"
+            if p.get('link'): 
+              texto_produto += f"🔗 [Ver na Steam]({p.get('link')})\n"
+
+            if img_url := p.get('imagem'):
+              try:
+                resposta_img = requests.get(img_url)
+                if resposta_img.status_code == 200:
+                  img_bytes = io.BytesIO(resposta_img.content)
+                  bot.send_photo(call.message.chat.id, photo=img_bytes, caption=texto_produto, parse_mode="Markdown")
+                else:
+                  bot.send_message(call.message.chat.id, texto_produto, parse_mode="Markdown")
+
+              except Exception as e:
+                print(f"Erro ao enviar foto do jogo {p.get('nome')}: {e}")
+                bot.send_message(call.message.chat.id, texto_produto, parse_mode="Markdown")
+            else:
+              bot.send_message(call.message.chat.id, texto_produto, parse_mode="Markdown")
+        else:
+          bot.send_message(call.message.chat.id, "Nenhuma promoção encontrada nessa faixa de preço específica.", parse_mode="Markdown")
+      else:
+        bot.send_message(call.message.chat.id, "Nenhuma promoção encontrada no banco de dados.", parse_mode="Markdown")
+
+  except Exception as e:
+    print(f"Erro ao buscar promoções: {e}")
+    bot.send_message(call.message.chat.id, "Ocorreu um erro ao conectar com a API.")

@@ -28,7 +28,7 @@ def filtrar_produtos(call):
         bot.send_message(call.message.chat.id, cabecalho, parse_mode="Markdown")
 
         for p in produtos:
-          if not p.get('publicado'):
+          if p.get('publicado'):
             texto_produto = f"*{p['nome']}*\n\n"
             if p.get('preco'): 
               texto_produto += f"💸 Preço: R$ {p['preco']}\n"

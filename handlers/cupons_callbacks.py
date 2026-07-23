@@ -29,7 +29,7 @@ def filtrar_cupons(call):
         bot.send_message(call.message.chat.id, cabecalho, parse_mode="Markdown")
 
         for c in cupons:
-          if not c.get('publicado'):
+          if c.get('publicado'):
             texto_cupom = f"*{c['nome']}*\n\n"
             if c.get('desconto'): 
               texto_cupom += f"📉 Desconto: {c['desconto']}\n"

@@ -1,21 +1,18 @@
 from bot_instance import bot
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+from telebot import types
 
 @bot.message_handler(commands=['kabum'])
-def menu_kabum(mensagem):
-  markup = InlineKeyboardMarkup()
-  markup.row_width = 2
-  
+def exibir_menu_kabum(mensagem):
+  markup = types.InlineKeyboardMarkup(row_width=2)
   markup.add(
-    InlineKeyboardButton("🎮 Placas de Vídeo", callback_data="kabum_video"),
-    InlineKeyboardButton("⚙️ Processadores", callback_data="kabum_processador"),
-    InlineKeyboardButton("💻 Notebooks", callback_data="kabum_notebook"),
-    InlineKeyboardButton("🎧 Periféricos", callback_data="kabum_periferico"),
-    InlineKeyboardButton("🔥 Ver Todas", callback_data="kabum_todas")
+    types.InlineKeyboardButton("Até R$ 100", callback_data="kabum_0_100"),
+    types.InlineKeyboardButton("R$ 100 a R$ 500", callback_data="kabum_100_500"),
+    types.InlineKeyboardButton("Acima de R$ 500", callback_data="kabum_500_plus"),
+    types.InlineKeyboardButton("🛒 Todas", callback_data="kabum_all"),
   )
-  
+
   bot.send_message(
-    mensagem.chat.id, 
-    "🥷 Escolha uma categoria para ver as ofertas da KaBuM!:", 
+    mensagem.chat.id,
+    "Selecione a faixa de preço das ofertas do Kabum:",
     reply_markup=markup
   )
