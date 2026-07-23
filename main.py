@@ -9,6 +9,8 @@ import handlers.contato_callbacks
 import handlers.produtos_callbacks
 import handlers.cupons_callbacks
 import handlers.nota_fiscal 
+import handlers.ofertas_kabum
+import handlers.ofertas_kabum_callbacks
 import handlers.promocoes_steam_callbacks
 
 if __name__ == "__main__":
