@@ -8,7 +8,7 @@ from config import API_URL
 def filtrar_cupons(call):
   # Avisa ao Telegram que o clique foi processado
   bot.answer_callback_query(call.id)
-  
+
   # Extrai o termo de busca do callback_data (ex: 'cupom_shopee' vira 'shopee')
   termo_busca = call.data.replace("cupom_", "")
   if termo_busca == "todos":
@@ -16,10 +16,10 @@ def filtrar_cupons(call):
 
   try:
     response_cupons = requests.get(f"{API_URL}/cupons")
-    
+
     if response_cupons.status_code == 200:
       cupons = response_cupons.json()
-      
+
       # Filtra os cupons caso não seja a opção "Ver Todos"
       if termo_busca:
         cupons = [c for c in cupons if termo_busca in c.get('nome', '').lower()]
@@ -27,7 +27,7 @@ def filtrar_cupons(call):
       if cupons:
         cabecalho = "🎟 *Resultados para a loja selecionada:*" if termo_busca else "🎟 *Confira todos os Cupons:*"
         bot.send_message(call.message.chat.id, cabecalho, parse_mode="Markdown")
-        
+
         for c in cupons:
           if not c.get('publicado'):
             texto_cupom = f"*{c['nome']}*\n\n"
@@ -39,14 +39,12 @@ def filtrar_cupons(call):
               texto_cupom += f"🛒 Limite Mínimo: R$ {c['limite_minimo']}\n\n"
             if c.get('link'):
               texto_cupom += f"🔗 [Acessar Cupom]({c['link']})\n"
-            
-            # Envia com imagem se existir
-            img_data = c.get('imagem')
-            if img_data:
+
+            if img_data := c.get('imagem'):
               try:
                 if "base64," in img_data:
                   img_data = img_data.split("base64,")[1]
-                
+
                 img_bytes = base64.b64decode(img_data)
                 bot.send_photo(call.message.chat.id, photo=io.BytesIO(img_bytes), caption=texto_cupom, parse_mode="Markdown")
               except Exception as e:

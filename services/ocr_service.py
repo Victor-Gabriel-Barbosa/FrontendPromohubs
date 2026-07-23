@@ -47,8 +47,8 @@ def _encontrar_total(texto_extraido: str):
 
     resultado = process.extractOne(linha_limpa, opcoes_ancora, scorer=fuzz.WRatio, processor=utils.default_process)
     if resultado and resultado[1] >= 75:
-      numero = re.findall(r'\d+[.,\d]*', linha_limpa) or re.findall(r'\d+[.,\d]*', linha_de_baixo)
-      if numero:
+      if numero := re.findall(r'\d+[.,\d]*', linha_limpa) or re.findall(
+          r'\d+[.,\d]*', linha_de_baixo):
         return numero[-1]
   return None
 

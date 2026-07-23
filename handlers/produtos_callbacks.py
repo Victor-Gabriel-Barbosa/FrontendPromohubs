@@ -7,7 +7,7 @@ from config import API_URL
 @bot.callback_query_handler(func=lambda call: call.data.startswith("produto_"))
 def filtrar_produtos(call):
   bot.answer_callback_query(call.id)
-  
+
   # Extrai o termo de busca do callback_data (ex: 'produto_smartphone' vira 'smartphone')
   termo_busca = call.data.replace("produto_", "")
   if termo_busca == "todos":
@@ -15,10 +15,10 @@ def filtrar_produtos(call):
 
   try:
     response_produtos = requests.get(f"{API_URL}/produtos")
-    
+
     if response_produtos.status_code == 200:
       produtos = response_produtos.json()
-      
+
       # Filtra os produtos caso não seja a opção "Ver Todos"
       if termo_busca:
         produtos = [p for p in produtos if termo_busca in p.get('nome', '').lower()]
@@ -26,7 +26,7 @@ def filtrar_produtos(call):
       if produtos:
         cabecalho = "🛒 *Resultados para a categoria selecionada:*" if termo_busca else "🛒 *Confira todas as Promoções:*"
         bot.send_message(call.message.chat.id, cabecalho, parse_mode="Markdown")
-        
+
         for p in produtos:
           if not p.get('publicado'):
             texto_produto = f"*{p['nome']}*\n\n"
@@ -38,14 +38,12 @@ def filtrar_produtos(call):
               texto_produto += f"🎟 Cupom: `{p['cupom']}`\n\n"
             if p.get('link'): 
               texto_produto += f"🔗 [Acessar Promoção]({p['link']})\n"
-              
-            # Envia com imagem se existir
-            img_data = p.get('imagem')
-            if img_data:
+
+            if img_data := p.get('imagem'):
               try:
                 if "base64," in img_data:
                   img_data = img_data.split("base64,")[1]
-                
+
                 img_bytes = base64.b64decode(img_data)
                 bot.send_photo(call.message.chat.id, photo=io.BytesIO(img_bytes), caption=texto_produto, parse_mode="Markdown")
               except Exception as e:
